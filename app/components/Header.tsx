@@ -2,8 +2,15 @@
 
 import { SignInButton, SignedIn, SignedOut, UserButton } from '@clerk/nextjs'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 
 const Header = () => {
+    const pathname = usePathname();
+
+    const isActive = (path: string) => {
+        return pathname === path ? "bg-base-300" : "";
+    };
+
     return (
         <div className="navbar bg-base-100 shadow-sm">
             <div className="navbar-start">
@@ -14,28 +21,40 @@ const Header = () => {
                         </svg>
                     </div>
                     <ul tabIndex={0} className="menu menu-sm dropdown-content bg-base-100 rounded-box z-[1] mt-3 w-52 p-2 shadow">
-                        <li><Link href="/admin/manage">Manage</Link></li>
-                        <li><Link href="/admin/assign">Assign</Link></li>
+                        <li>
+                            <Link href="/admin/manage" className={isActive("/admin/manage")}>
+                                Manage Roles
+                            </Link>
+                        </li>
+                        <li>
+                            <Link href="/admin/assign" className={isActive("/admin/assign")}>
+                                Assign Roles
+                            </Link>
+                        </li>
                     </ul>
                 </div>
                 <Link href="/" className="btn btn-ghost text-xl">UAC Admin</Link>
             </div>
             <div className="navbar-center hidden lg:flex">
                 <ul className="menu menu-horizontal px-1">
-                    <li><Link href="/admin/manage">Manage</Link></li>
-                    <li><Link href="/admin/assign">Assign</Link></li>
+                    <li>
+                        <Link href="/admin/manage" className={isActive("/admin/manage")}>
+                            Manage Roles
+                        </Link>
+                    </li>
+                    <li>
+                        <Link href="/admin/assign" className={isActive("/admin/assign")}>
+                            Assign Roles
+                        </Link>
+                    </li>
                 </ul>
             </div>
             <div className="navbar-end">
                 <SignedIn>
-                    <li className="flex items-center">
-                        <UserButton />
-                    </li>
+                    <UserButton />
                 </SignedIn>
                 <SignedOut>
-                    <li className="flex items-center rounded bg-black px-2 font-bold text-white">
-                        <SignInButton mode="modal" />
-                    </li>
+                    <SignInButton mode="modal" />
                 </SignedOut>
             </div>
         </div>

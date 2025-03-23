@@ -125,14 +125,18 @@ export default function UserRolesPage() {
                                             </td>
                                             <td>
                                                 <div className="flex flex-wrap gap-2">
-                                                    {user.publicMetadata.roles?.map((role: any) => (
-                                                        <div
-                                                            key={role.id}
-                                                            className="badge badge-outline"
-                                                        >
-                                                            {role.name}
-                                                        </div>
-                                                    )) || 'No roles assigned'}
+                                                    {(user.publicMetadata.roles?.length ?? 0) > 0 ? (
+                                                        user.publicMetadata.roles?.map((role: any) => (
+                                                            <div
+                                                                key={role.id}
+                                                                className="badge badge-outline"
+                                                            >
+                                                                {role.name}
+                                                            </div>
+                                                        ))
+                                                    ) : (
+                                                        'No roles assigned'
+                                                    )}
                                                 </div>
                                             </td>
                                             <td>
