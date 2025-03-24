@@ -12,7 +12,7 @@ const Header = () => {
     };
 
     return (
-        <div className="navbar bg-base-100 shadow-sm">
+        <div className="navbar bg-neutral text-neutral-content shadow-sm">
             <div className="navbar-start">
                 <div className="dropdown">
                     <div tabIndex={0} role="button" className="btn btn-ghost lg:hidden">
@@ -23,28 +23,28 @@ const Header = () => {
                     <ul tabIndex={0} className="menu menu-sm dropdown-content bg-base-100 rounded-box z-[1] mt-3 w-52 p-2 shadow">
                         <li>
                             <Link href="/admin/manage" className={isActive("/admin/manage")}>
-                                Manage Roles
+                                Manage
                             </Link>
                         </li>
                         <li>
                             <Link href="/admin/assign" className={isActive("/admin/assign")}>
-                                Assign Roles
+                                Assign
                             </Link>
                         </li>
                     </ul>
                 </div>
-                <Link href="/" className="btn btn-ghost text-xl">UAC Admin</Link>
+                <Link href="/" className="btn btn-ghost text-xl">RBAC Admin</Link>
             </div>
             <div className="navbar-center hidden lg:flex">
                 <ul className="menu menu-horizontal px-1">
                     <li>
                         <Link href="/admin/manage" className={isActive("/admin/manage")}>
-                            Manage Roles
+                            Manage
                         </Link>
                     </li>
                     <li>
                         <Link href="/admin/assign" className={isActive("/admin/assign")}>
-                            Assign Roles
+                            Assign
                         </Link>
                     </li>
                 </ul>

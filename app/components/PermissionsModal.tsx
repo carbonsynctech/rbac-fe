@@ -129,7 +129,7 @@ export default function PermissionsModal({
 
                     <div className="card bg-base-200">
                         <div className="card-body p-4">
-                            <div className="h-48 overflow-y-auto menu">
+                            <div className="max-h-[40vh] overflow-y-auto menu">
                                 {availablePermissions.map((permission) => (
                                     <li key={permission.id}>
                                         <a onClick={() => handleAssignPermission(permission)} className="justify-between">
@@ -139,7 +139,7 @@ export default function PermissionsModal({
                                     </li>
                                 ))}
                                 {availablePermissions.length === 0 && searchTerm && (
-                                    <div className="text-center text-base-content/60 py-4">
+                                    <div className="text-center text-base-content/60 py-2">
                                         No matching permissions found
                                     </div>
                                 )}
@@ -160,7 +160,7 @@ export default function PermissionsModal({
                     </div>
                     <div className="card bg-base-200">
                         <div className="card-body p-4">
-                            <div className="menu h-48 overflow-y-auto">
+                            <div className="menu max-h-[30vh] overflow-y-auto">
                                 {localPermissions.map((permission) => (
                                     <li key={permission.id}>
                                         <a onClick={() => handleRemovePermission(permission.id)} className="justify-between">
@@ -170,7 +170,7 @@ export default function PermissionsModal({
                                     </li>
                                 ))}
                                 {localPermissions.length === 0 && (
-                                    <div className="text-center text-base-content/60 py-4">
+                                    <div className="text-center text-base-content/60 py-2">
                                         No permissions assigned
                                     </div>
                                 )}
