@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { Permission, RoleWithPermissions, assignPermissionToRole, removePermissionFromRole, createPermission } from "@/app/actions/rolePermissions";
 
-interface PermissionsModalProps {
+export interface PermissionsModalProps {
+    role: RoleWithPermissions;
     isOpen: boolean;
     onClose: () => void;
-    role: RoleWithPermissions;
+    onCreatePermission: (name: string) => Promise<Permission>;
     allPermissions: Permission[];
     onUpdate: () => Promise<void>;
 }
@@ -14,7 +15,8 @@ export default function PermissionsModal({
     onClose,
     role,
     allPermissions,
-    onUpdate
+    onUpdate,
+    onCreatePermission
 }: PermissionsModalProps) {
     const [searchTerm, setSearchTerm] = useState("");
     const [newPermissionName, setNewPermissionName] = useState("");

@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useParams } from 'next/navigation';
+import { useUser } from '@clerk/nextjs';
 import { 
     Role, 
     Permission, 
@@ -13,27 +15,41 @@ import {
 } from '@/app/actions/rolePermissions';
 import PermissionsModal from '@/app/components/PermissionsModal';
 
-export default function RolesAndPermissionsPage() {
+export default function SubAdminManagePage() {
+    const params = useParams();
+    const adminType = params.adminType as string;
+    const { user } = useUser();
+    
+    const [adminRoleId, setAdminRoleId] = useState<string>('');
     const [roles, setRoles] = useState<RoleWithPermissions[]>([]);
     const [permissions, setPermissions] = useState<Permission[]>([]);
     const [selectedRole, setSelectedRole] = useState<RoleWithPermissions | null>(null);
     const [newRoleName, setNewRoleName] = useState('');
-    const [isNewRoleAdmin, setIsNewRoleAdmin] = useState(false);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     useEffect(() => {
-        loadData();
-    }, []);
+        const roles = user?.publicMetadata?.roles as Array<any> || [];
+        const adminRole = roles.find(
+            (role) => role.name === adminType && role.is_admin_role
+        );
+        if (adminRole) {
+            setAdminRoleId(adminRole.id);
+            loadData(adminRole.id);
+        }
+    }, [user, adminType]);
 
-    async function loadData() {
+    async function loadData(roleId: string) {
         try {
             const [rolesData, permissionsData] = await Promise.all([
                 getRoles(),
                 getPermissions()
             ]);
-            setRoles(rolesData);
+            const filteredRoles = rolesData.filter(role => 
+                role.parent_role_id === roleId
+            );
+            setRoles(filteredRoles);
             setPermissions(permissionsData);
         } catch (err) {
             setError('Failed to load data');
@@ -45,10 +61,9 @@ export default function RolesAndPermissionsPage() {
     async function handleCreateRole(e: React.FormEvent) {
         e.preventDefault();
         try {
-            await createRole(newRoleName, undefined, isNewRoleAdmin);
+            await createRole(newRoleName, adminRoleId, false);
             setNewRoleName('');
-            setIsNewRoleAdmin(false);
-            loadData();
+            loadData(adminRoleId);
         } catch (err) {
             setError('Failed to create role');
         }
@@ -61,7 +76,7 @@ export default function RolesAndPermissionsPage() {
                 setSelectedRole(null);
                 setIsModalOpen(false);
             }
-            loadData();
+            loadData(adminRoleId);
         } catch (err) {
             setError('Failed to delete role');
         }
@@ -81,7 +96,9 @@ export default function RolesAndPermissionsPage() {
     if (error) return (
         <div className="min-h-screen p-8">
             <div className="alert alert-error">
-                <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
                 <span>{error}</span>
             </div>
         </div>
@@ -91,7 +108,10 @@ export default function RolesAndPermissionsPage() {
         <div className="min-h-screen p-8">
             <div className="max-w-4xl mx-auto">
                 <div className="flex justify-between items-center mb-8">
-                    <h1 className="text-3xl font-bold">Roles and Permissions</h1>
+                    <div>
+                        <h1 className="text-3xl font-bold capitalize">{adminType} Role Management</h1>
+                        <p className="text-base-content/70 mt-1">Manage roles for {adminType} administration</p>
+                    </div>
                     <div className="card bg-base-200 p-4">
                         <form onSubmit={handleCreateRole} className="space-y-4">
                             <div className="join w-full">
@@ -109,22 +129,6 @@ export default function RolesAndPermissionsPage() {
                                 >
                                     Add Role
                                 </button>
-                            </div>
-                            <div className="form-control">
-                                <label className="label cursor-pointer">
-                                    <span className="label-text">Make this role an admin role</span>
-                                    <input
-                                        type="checkbox"
-                                        className="toggle toggle-primary"
-                                        checked={isNewRoleAdmin}
-                                        onChange={(e) => setIsNewRoleAdmin(e.target.checked)}
-                                    />
-                                </label>
-                                {isNewRoleAdmin && (
-                                    <div className="text-sm text-base-content/70 mt-1">
-                                        This role will be able to create and manage other roles
-                                    </div>
-                                )}
                             </div>
                         </form>
                     </div>
@@ -149,9 +153,11 @@ export default function RolesAndPermissionsPage() {
                                             <div className="flex items-center justify-between mb-2">
                                                 <div>
                                                     <h3 className="card-title text-lg">{role.name}</h3>
-                                                    <div className="badge badge-outline mt-1">
-                                                        {role.is_admin_role ? 'Admin' : 'Regular'}
-                                                    </div>
+                                                    {role.is_admin_role && (
+                                                        <div className="badge badge-primary mt-1">
+                                                            Admin
+                                                        </div>
+                                                    )}
                                                 </div>
                                                 <div className="join">
                                                     <button
@@ -200,10 +206,10 @@ export default function RolesAndPermissionsPage() {
                     }}
                     role={selectedRole}
                     allPermissions={permissions}
-                    onUpdate={loadData}
+                    onUpdate={() => loadData(adminRoleId)}
                     onCreatePermission={async (name) => {
                         const permission = await createPermission(name);
-                        await loadData();
+                        await loadData(adminRoleId);
                         return permission;
                     }}
                 />

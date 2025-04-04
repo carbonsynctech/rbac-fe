@@ -1,4 +1,4 @@
-import { getRoles } from "./rolePermissions";
+import { getRoles, storeUserRoles } from "./rolePermissions";
 
 export interface ClerkUser {
     id: string;
@@ -43,6 +43,7 @@ export async function updateUserRoles(userId: string, roleIds: string[], operati
         const roles = await getRoles();
         const selectedRoles = roles.filter(role => roleIds.includes(role.id));
         
+        // Update roles in Clerk
         const response = await fetch(`/api/users/${userId}/metadata`, {
             method: 'PATCH',
             headers: {
@@ -53,6 +54,7 @@ export async function updateUserRoles(userId: string, roleIds: string[], operati
                     roles: selectedRoles.map(role => ({
                         id: role.id,
                         name: role.name,
+                        is_admin_role: role.is_admin_role,
                         permissions: role.permissions.map(p => ({
                             id: p.id,
                             name: p.name
@@ -63,12 +65,15 @@ export async function updateUserRoles(userId: string, roleIds: string[], operati
         });
 
         if (!response.ok) {
-            throw new Error('Failed to update user roles');
+            throw new Error('Failed to update user roles in Clerk');
         }
+
+        // Store roles in database
+        await storeUserRoles(userId, roleIds);
 
         return true;
     } catch (error) {
         console.error('Error updating user roles:', error);
-        throw new Error('Failed to update user roles');
+        throw error instanceof Error ? error : new Error('Failed to update user roles');
     }
 } 

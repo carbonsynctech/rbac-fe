@@ -3,9 +3,24 @@
 import { SignInButton, SignedIn, SignedOut, UserButton } from '@clerk/nextjs'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useUser } from '@clerk/nextjs'
+import { useEffect, useState } from 'react'
+import { getRoles, Role } from '@/app/actions/rolePermissions'
 
 const Header = () => {
-    const pathname = usePathname();
+    const { user } = useUser()
+    const [adminRoles, setAdminRoles] = useState<Role[]>([])
+    const pathname = usePathname()
+
+    // useEffect(() => {
+    //     const loadAdminRoles = async () => {
+    //         const userRoles = (user?.publicMetadata?.roles || []) as Role[];
+    //         // Filter for admin roles that the user has
+    //         const adminRoles = userRoles.filter(role => role.is_admin_role);
+    //         setAdminRoles(adminRoles);
+    //     }
+    //     loadAdminRoles();
+    // }, [user])
 
     const isActive = (path: string) => {
         return pathname === path ? "bg-base-300" : "";
@@ -37,16 +52,7 @@ const Header = () => {
             </div>
             <div className="navbar-center hidden lg:flex">
                 <ul className="menu menu-horizontal px-1">
-                    <li>
-                        <Link href="/admin/manage" className={isActive("/admin/manage")}>
-                            Manage
-                        </Link>
-                    </li>
-                    <li>
-                        <Link href="/admin/assign" className={isActive("/admin/assign")}>
-                            Assign
-                        </Link>
-                    </li>
+
                 </ul>
             </div>
             <div className="navbar-end">
