@@ -17,6 +17,8 @@ export async function PATCH(
             },
         });
 
+        console.log('getCurrentUser', getCurrentUser);
+
         if (!getCurrentUser.ok) {
             const error = await getCurrentUser.json();
             return NextResponse.json(error, { status: getCurrentUser.status });

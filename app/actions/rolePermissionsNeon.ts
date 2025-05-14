@@ -110,6 +110,8 @@ export async function deleteRole(roleId: string) {
             const updatedRoles = userData.public_metadata.roles?.filter(
                 (role: { id: string }) => role.id !== roleId
             ) || [];
+
+            //console.log('Updated roles:', updatedRoles);
             
             // Update the user's metadata with the filtered roles
             const updateResponse = await fetch(`/api/users/${user.user_id}/metadata`, {

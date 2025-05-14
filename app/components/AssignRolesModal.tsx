@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { Role } from "@/app/actions/rolePermissions";
-import { ClerkUser, updateUserRoles } from "@/app/actions/userRoles";
+import { Role } from "@/app/actions/rolePermissionsNeon";
+import { ClerkUser, updateUserRoles } from "@/app/actions/userRolesClerk";
 
 interface AssignRolesModalProps {
     isOpen: boolean;

@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useUser } from '@clerk/nextjs'
 import { useEffect, useState } from 'react'
-import { getRoles, Role } from '@/app/actions/rolePermissions'
+import { getRoles, Role } from '../actions/rolePermissionsNeon'
 
 const Header = () => {
     const { user } = useUser()

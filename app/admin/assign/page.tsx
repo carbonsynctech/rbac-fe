@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ClerkUser, getUsers } from '@/app/actions/userRoles';
-import { Role, getRoles } from '@/app/actions/rolePermissions';
+import { ClerkUser, getUsers } from '@/app/actions/userRolesClerk';
+import { Role, getRoles } from '@/app/actions/rolePermissionsNeon';
 import AssignRolesModal from '@/app/components/AssignRolesModal';
 
 export default function UserRolesPage() {

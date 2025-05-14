@@ -10,7 +10,7 @@ import {
     createRole, 
     deleteRole,
     createPermission,
-} from '@/app/actions/rolePermissions';
+} from '@/app/actions/rolePermissionsNeon';
 import PermissionsModal from '@/app/components/PermissionsModal';
 
 export default function RolesAndPermissionsPage() {
