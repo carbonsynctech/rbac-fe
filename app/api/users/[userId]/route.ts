@@ -6,7 +6,6 @@ export async function GET(
 ) {
     try {
 
-        console.log('Fetching user:', params.userId);
         const { userId } = params;
 
         const response = await fetch(`https://api.clerk.dev/v1/users/${userId}`, {

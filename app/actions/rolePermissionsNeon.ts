@@ -1,5 +1,6 @@
 "use server";
 import { neon } from "@neondatabase/serverless";
+import { createClerkClient } from '@clerk/backend';
 
 export interface Permission {
     id: string;
@@ -100,35 +101,28 @@ export async function deleteRole(roleId: string) {
         // Update each user's metadata in Clerk to remove the role
         for (const user of usersWithRole) {
             // First get the user's current metadata
-            const userResponse = await fetch(`/api/users/${user.user_id}`);
-            if (!userResponse.ok) {
-                throw new Error(`Failed to fetch user ${user.user_id} from Clerk`);
-            }
-            const userData = await userResponse.json();
+
+            const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
+            const userMetadata = (await clerk.users.getUser(user.user_id)).publicMetadata;
+            //const userMetadata = (await clerkUser.users.getUser(user.user_id)).publicMetadata;
+
+            // const userResponse = await fetch(`/api/users/${user.user_id}`);
+            // if (!userResponse.ok) {
+            //     throw new Error(`Failed to fetch user ${user.user_id} from Clerk`);
+            // }
+            // const userData = await userResponse.json();
             
             // Filter out the role being deleted
-            const updatedRoles = userData.public_metadata.roles?.filter(
-                (role: { id: string }) => role.id !== roleId
-            ) || [];
+            const updatedRoles = (userMetadata.roles as Array<{ id: string }> || []).filter(
+                (role) => role.id !== roleId
+            );
 
-            //console.log('Updated roles:', updatedRoles);
-            
             // Update the user's metadata with the filtered roles
-            const updateResponse = await fetch(`/api/users/${user.user_id}/metadata`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    public_metadata: {
-                        roles: updatedRoles
-                    }
-                })
+            await clerk.users.updateUserMetadata(user.user_id, {
+                publicMetadata: {
+                    roles: updatedRoles
+                }
             });
-
-            if (!updateResponse.ok) {
-                throw new Error(`Failed to update user ${user.user_id} metadata in Clerk`);
-            }
         }
 
         // Finally delete the role itself
@@ -169,4 +163,36 @@ export async function storeUserRoles(userId: string, roleIds: string[]) {
             SELECT ${userId}, unnest(${roleIds}::uuid[])
         `;
     }
+}
+
+export async function checkSetupStatus() {
+    const sql = neon(process.env.DATABASE_URL!);
+    
+    // Check if roles table is empty
+    const rolesCount = await sql`SELECT COUNT(*) FROM roles`;
+    const userRolesCount = await sql`SELECT COUNT(*) FROM user_roles`;
+    
+    return {
+        rolesCount: rolesCount[0].count,
+        userRolesCount: userRolesCount[0].count
+    };
+}
+
+export async function createSuperRole(userId: string) {
+    const sql = neon(process.env.DATABASE_URL!);
+    
+    // Create super role
+    const superRole = await sql`
+        INSERT INTO roles (name, is_admin_role)
+        VALUES ('super', true)
+        RETURNING *
+    `;
+    
+    // Assign role to user in database
+    await sql`
+        INSERT INTO user_roles (user_id, role_id)
+        VALUES (${userId}, ${superRole[0].id})
+    `;
+
+    return superRole[0];
 } 

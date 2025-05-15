@@ -46,17 +46,17 @@ export default clerkMiddleware(async (auth, request) => {
         }
     }
 
-    // Only check setup status for the /setup route
-    if (isSetupRoute(request)) {
-        try {
-            const { needsSetup } = await checkSetupStatus(userId || '');
-            // if (!needsSetup) {
-            //     return NextResponse.redirect(new URL('/authorized', request.url));
-            // }
-        } catch (error) {
-            console.error('Error checking setup status:', error);
-        }
-    }
+    // // Only check setup status for the /setup route
+    // if (isSetupRoute(request)) {
+    //     try {
+    //         const { needsSetup } = await checkSetupStatus(userId || '');
+    //         // if (!needsSetup) {
+    //         //     return NextResponse.redirect(new URL('/authorized', request.url));
+    //         // }
+    //     } catch (error) {
+    //         console.error('Error checking setup status:', error);
+    //     }
+    // }
     
     return NextResponse.next();
 });

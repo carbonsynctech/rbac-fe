@@ -1,5 +1,9 @@
-import { neon } from "@neondatabase/serverless";
-import { getRoles, storeUserRoles } from "./rolePermissionsNeon";
+'use server';
+
+import { checkSetupStatus as checkDatabaseSetup, createSuperRole, getRoles, storeUserRoles } from "./rolePermissionsNeon";
+//import { createClerkClient } from '@clerk/backend';
+import { clerkClient } from '@clerk/nextjs/server';
+
 
 export interface ClerkUser {
     id: string;
@@ -22,70 +26,47 @@ export interface ClerkUser {
     };
 }
 
-export async function checkSetupStatus(userId: string) {
-    const sql = neon(process.env.DATABASE_URL!);
+// Seems to be fully working
+export async function checkSetupStatus(userId: string): Promise<{ needsSetup: boolean }> {
+    // Check database status
+    const { rolesCount, userRolesCount } = await checkDatabaseSetup();
     
-    // Check if roles table is empty
-    const rolesCount = await sql`SELECT COUNT(*) FROM roles`;
-    const userRolesCount = await sql`SELECT COUNT(*) FROM user_roles`;
-
     // Check if user has any roles in Clerk
-    const response = await fetch(`https://api.clerk.dev/v1/users/${userId}`, {
-        headers: {
-            'Authorization': `Bearer ${process.env.CLERK_SECRET_KEY}`,
-            'Content-Type': 'application/json',
-        },
-    });
-    if (!response.ok) {
-        throw new Error('Failed to fetch user from Clerk');
+    try {
+        //const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
+        const clerk = await clerkClient();
+        const user = await clerk.users.getUser(userId);
+        const hasClerkRoles = (user.publicMetadata.roles as Array<any> || []).length > 0;
+        
+        return {
+            needsSetup: (rolesCount === 0 && userRolesCount === 0) || !hasClerkRoles
+        };
+    } catch (error) {
+        console.error('Error fetching user from Clerk:', error);
+        // If we can't find the user, assume setup is needed
+        return { needsSetup: true };
     }
-    const userData = await response.json();
-    const hasClerkRoles = userData.public_metadata?.roles?.length > 0;
-    
-    return {
-        needsSetup: (rolesCount[0].count === 0 && userRolesCount[0].count === 0) || !hasClerkRoles
-    };
 }
 
+// Checking this now
 export async function createSuperUser(userId: string): Promise<boolean> {
     try {
-        const sql = neon(process.env.DATABASE_URL!);
-        
-        // Create super role
-        const superRole = await sql`
-            INSERT INTO roles (name, is_admin_role)
-            VALUES ('super', true)
-            RETURNING *
-        `;
-        
-        // Assign role to user in database
-        await sql`
-            INSERT INTO user_roles (user_id, role_id)
-            VALUES (${userId}, ${superRole[0].id})
-        `;
+        // Create super role in database
+        const superRole = await createSuperRole(userId);
         
         // Update user's metadata in Clerk
-        const response = await fetch(`https://api.clerk.dev/v1/users/${userId}`, {
-            method: 'PATCH',
-            headers: {
-                'Authorization': `Bearer ${process.env.CLERK_SECRET_KEY}`,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                public_metadata: {
-                    roles: [{
-                        id: superRole[0].id,
-                        name: 'super',
-                        is_admin_role: true,
-                        permissions: []
-                    }]
-                }
-            })
+        //const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
+        const clerk = await clerkClient();
+        await clerk.users.updateUserMetadata(userId, {
+            publicMetadata: {
+                roles: [{
+                    id: superRole.id,
+                    name: 'super',
+                    is_admin_role: true,
+                    permissions: []
+                }]
+            }
         });
-
-        if (!response.ok) {
-            throw new Error('Failed to update user metadata in Clerk');
-        }
 
         return true;
     } catch (error) {
@@ -95,25 +76,18 @@ export async function createSuperUser(userId: string): Promise<boolean> {
 }
 
 export async function getUsers(): Promise<ClerkUser[]> {
-    const response = await fetch('/api/users', {
-        method: 'GET',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-    });
-    if (!response.ok) {
-        throw new Error('Failed to fetch users');
-    }
-    const data = await response.json();
-    return data.map((user: any) => ({
+    //const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
+    const clerk = await clerkClient();
+    const { data: users } = await clerk.users.getUserList();
+    return users.map((user: any) => ({
         id: user.id,
-        firstName: user.first_name,
-        lastName: user.last_name,
-        imageUrl: user.image_url,
-        emailAddresses: user.email_addresses.map((email: any) => ({
-            email_address: email.email_address
+        firstName: user.firstName,
+        lastName: user.lastName,
+        imageUrl: user.imageUrl,
+        emailAddresses: user.emailAddresses.map((email: any) => ({
+            email_address: email.emailAddress
         })),
-        publicMetadata: user.public_metadata
+        publicMetadata: user.publicMetadata
     }));
 }
 
@@ -123,29 +97,21 @@ export async function updateUserRoles(userId: string, roleIds: string[], operati
         const selectedRoles = roles.filter(role => roleIds.includes(role.id));
         
         // Update roles in Clerk
-        const response = await fetch(`/api/users/${userId}/metadata`, {
-            method: 'PATCH',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                public_metadata: {
-                    roles: selectedRoles.map(role => ({
-                        id: role.id,
-                        name: role.name,
-                        is_admin_role: role.is_admin_role,
-                        permissions: role.permissions.map(p => ({
-                            id: p.id,
-                            name: p.name
-                        }))
+        //const clerk = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY });
+        const clerk = await clerkClient();
+        await clerk.users.updateUserMetadata(userId, {
+            publicMetadata: {
+                roles: selectedRoles.map(role => ({
+                    id: role.id,
+                    name: role.name,
+                    is_admin_role: role.is_admin_role,
+                    permissions: role.permissions.map(p => ({
+                        id: p.id,
+                        name: p.name
                     }))
-                }
-            })
+                }))
+            }
         });
-
-        if (!response.ok) {
-            throw new Error('Failed to update user roles in Clerk');
-        }
 
         // Store roles in database
         await storeUserRoles(userId, roleIds);

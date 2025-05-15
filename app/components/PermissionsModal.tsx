@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Permission, RoleWithPermissions, assignPermissionToRole, removePermissionFromRole, createPermission } from "@/app/actions/rolePermissionsNeon";
+import { Permission, RoleWithPermissions, assignPermissionToRole, removePermissionFromRole, createPermission } from "../actions/rolePermissionsNeon";
 
 export interface PermissionsModalProps {
     role: RoleWithPermissions;
